@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="el">
+<head>
+<meta charset="utf-8">
+<title>Greeklish demo</title>
+<style>
+  :root { --bg:#0f1311; --panel:#1d2420; --me:#f2b8c6; --onme:#4a1b28; --them:#2b3530; --text:#e8ece9; --muted:#a9b5ae; }
+  * { box-sizing:border-box; }
+  html,body { margin:0; height:100%; background:var(--bg); font-family:"Segoe UI",system-ui,sans-serif; color:var(--text); }
+  .app { height:100%; display:flex; flex-direction:column; }
+  header { padding:18px 26px 14px; border-bottom:1px solid #26302b; display:flex; align-items:center; gap:14px; }
+  .logo { width:44px; height:44px; border-radius:12px; background:var(--me); color:var(--onme); display:flex; align-items:center; justify-content:center; font-weight:600; font-size:18px; }
+  .t1 { font-size:20px; font-weight:600; }
+  .t2 { font-size:14px; color:var(--muted); margin-top:2px; }
+  .chat { flex:1; overflow:hidden; padding:20px 26px; display:flex; flex-direction:column; justify-content:flex-end; gap:10px; }
+  .msg { max-width:70%; padding:10px 16px; border-radius:20px; font-size:19px; line-height:1.35; animation:pop .25s ease-out; }
+  .them { align-self:flex-start; background:var(--them); border-bottom-left-radius:6px; }
+  .me { align-self:flex-end; background:var(--me); color:var(--onme); border-bottom-right-radius:6px; }
+  @keyframes pop { from { transform:scale(.9); opacity:0; } to { transform:none; opacity:1; } }
+  .composer { padding:14px 26px 96px; }  /* room below the box for the suggestion bubble */
+  .hint { font-size:13px; color:var(--muted); margin:0 0 8px 4px; height:18px; }
+  textarea { width:100%; height:56px; resize:none; background:var(--panel); color:var(--text); border:1px solid #2f3a34; border-radius:28px; padding:14px 22px; font:19px "Segoe UI",system-ui,sans-serif; outline:none; }
+  .end { position:fixed; inset:0; background:rgba(15,19,17,.94); display:none; flex-direction:column; align-items:center; justify-content:center; gap:14px; text-align:center; }
+  .end.show { display:flex; animation:pop .4s ease-out; }
+  .end .big { font-size:34px; font-weight:600; }
+  .end .pills { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:6px; }
+  .end .pill { background:var(--them); padding:8px 16px; border-radius:20px; font-size:17px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo">αβ</div>
+    <div><div class="t1">Greeklish Keyboard</div><div class="t2">γράφεις greeklish → βγαίνει ελληνικά</div></div>
+  </header>
+  <div class="chat" id="chat">
+    <div class="msg them">Hey! Πού είσαι;</div>
+  </div>
+  <div class="composer">
+    <div class="hint" id="hint">πληκτρολογώ με λατινικούς χαρακτήρες…</div>
+    <textarea id="box" autofocus></textarea>
+  </div>
+</div>
+<div class="end" id="end">
+  <div class="logo" style="width:72px;height:72px;font-size:28px;border-radius:18px">αβ</div>
+  <div class="big">Greeklish Keyboard</div>
+  <div style="font-size:19px;color:var(--muted)">γράφεις greeklish → βγαίνει ελληνικά</div>
+  <div class="pills"><span class="pill">Android + Windows</span><span class="pill">δωρεάν, χωρίς διαφημίσεις</span><span class="pill">offline, μηδέν άδειες</span></div>
+</div>
+<script>
+  const box = document.getElementById('box'), chat = document.getElementById('chat');
+  const replies = ['Τέλεια! 😄', 'Ok, τα λέμε μετά 👋'];
+  let sent = 0;
+  box.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    const text = box.value.trim();
+    if (!text) return;
+    const m = document.createElement('div'); m.className = 'msg me'; m.textContent = text; chat.appendChild(m);
+    box.value = ''; sent++;
+    if (replies[sent - 1]) setTimeout(() => {
+      const r = document.createElement('div'); r.className = 'msg them'; r.textContent = replies[sent - 1]; chat.appendChild(r);
+    }, 900);
+  });
+  // The recording script presses F9 at the end to show the closing card.
+  window.addEventListener('keydown', e => { if (e.key === 'F9') document.getElementById('end').classList.add('show'); });
+</script>
+</body>
+</html>

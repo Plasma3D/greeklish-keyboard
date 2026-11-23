@@ -1,0 +1,21 @@
+# training data, environments, checkpoints (too big / own licences)
+data/
+.venv/
+checkpoints/
+export/
+logs/
+__pycache__/
+*.pyc
+
+# build output and downloads
+releases/
+android/build/
+android/.gradle/
+android/local.properties
+windows/bin/
+windows/obj/
+windows/publish/
+
+# demo recording leftovers
+demo/raw.mp4
+demo/frames/
