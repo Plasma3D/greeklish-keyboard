@@ -7,7 +7,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>GreeklishKeyboard</AssemblyName>
     <RootNamespace>GreeklishKeyboard</RootNamespace>
-    <Version>0.2.2</Version>
+    <Version>0.2.3</Version>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <SelfContained>true</SelfContained>

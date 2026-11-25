@@ -13,6 +13,9 @@ for line in (ROOT / "windows" / "Assets" / "english.tsv").read_text(encoding="ut
     SCORES[w] = float(s)
 
 STRONG, WEAK, NEED = 3.0, -1.5, 2.0
+# English sentence mode: when 2 of the last 3 words are clearly English, any real English word stays English
+# (rotate, file, mega...) unless it is mostly a Greeklish word (se, na, kai: below FLOOR).
+FLOOR = -4.0
 
 
 def score(word):
@@ -30,10 +33,15 @@ def decide(words):
         s = score(w)
         recent = ctx[-3:]
         c = sum(max(-3, min(3, x)) for x in recent) / len(recent) if recent else 0.0
-        eng = s >= STRONG or (s > WEAK and s + c >= NEED)
-        # next word clearly English: the previous one, if it could be English, becomes English too
+        english_mode = sum(x >= STRONG for x in recent) >= 2 or (len(recent) >= 2 and c >= NEED)
+        eng = s >= STRONG or (s > WEAK and s + c >= NEED) or (english_mode and s > FLOOR)
+        # next word clearly English: the previous one, if it could be English, becomes English too,
+        # unless the sentence before it was Greek ("pes mou gia to game")
         if s >= STRONG and out and not out[-1] and ctx and ctx[-1] > WEAK:
-            out[-1] = True
+            before = ctx[:-1][-3:]
+            b = sum(max(-3, min(3, x)) for x in before) / len(before) if before else 0.0
+            if ctx[-1] + b >= 0:
+                out[-1] = True
         out.append(eng)
         ctx.append(s)
         if re.search(r"[.!?;]$", w):
@@ -65,6 +73,21 @@ TESTS = [
     ("i have to go", "EEEE"),
     ("se agapaw", "GG"),
     ("to email mou", "GEG"),
+    # English sentence mode
+    ("when i do rotate on the phone the game closes", "EEEEEEEEEE"),
+    ("can you rotate the screen", "EEEEE"),
+    ("send me the file please", "EEEEE"),
+    ("that was a mega game", "EEEEE"),
+    ("i love you mama", "EEEE"),
+    # English words inside Greek still work, and Greek continues after them
+    ("pes mou gia to game", "GGGGE"),
+    ("to game einai kalo", "GEGG"),
+    ("me too", "GE"),  # trade-off: "me"/"to" first in a message stay Greek so "to game" works
+    ("pame na paixoume game meta", "GGGEG"),
+    ("ok see you ta leme", "EEEGG"),
+    ("sorry file den to eida", "EGGGG"),
+    ("rotate to kinito", "GGG"),
+    ("ti rotate", "GG"),
 ]
 
 ok = 0

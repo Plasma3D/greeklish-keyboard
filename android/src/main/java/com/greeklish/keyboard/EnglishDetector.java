@@ -17,6 +17,8 @@ import java.util.Map;
  */
 public final class EnglishDetector {
     public static final double STRONG = 3.0, WEAK = -1.5, NEED = 2.0;
+    /** In an English sentence, real English words above this stay English (rotate, file); se, na, kai don't. */
+    public static final double FLOOR = -4.0;
     private final Map<String, Double> scores = new HashMap<>();
 
     public EnglishDetector(Context ctx) {
@@ -45,17 +47,38 @@ public final class EnglishDetector {
     /** True if the word should stay English, given the scores of the previous words in this sentence. */
     public static boolean isEnglish(double score, List<Double> sentence) {
         if (score >= STRONG) return true;
-        if (score <= WEAK) return false;
-        int n = Math.min(3, sentence.size());
-        double ctx = 0;
-        for (int i = sentence.size() - n; i < sentence.size(); i++) ctx += Math.max(-3, Math.min(3, sentence.get(i)));
-        if (n > 0) ctx /= n;
-        return score + ctx >= NEED;
+        if (score > WEAK && score + recent(sentence, sentence.size()) >= NEED) return true;
+        return score > FLOOR && englishSentence(sentence);
     }
 
-    /** A clearly English word right after an ambiguous one means that one was English too ("do" in "do you"). */
-    public static boolean previousWasEnglish(double score, double previousScore) {
-        return score >= STRONG && previousScore > WEAK;
+    /**
+     * The sentence is clearly English so far ("when i do", "send me the"): 2 of the last 3 words are
+     * clearly English, or the last 2-3 lean English on average. Then it continues in English.
+     */
+    public static boolean englishSentence(List<Double> sentence) {
+        int n = Math.min(3, sentence.size()), strong = 0;
+        for (int i = sentence.size() - n; i < sentence.size(); i++) if (sentence.get(i) >= STRONG) strong++;
+        return strong >= 2 || (n >= 2 && recent(sentence, sentence.size()) >= NEED);
+    }
+
+    /** Average score (clipped to -3..3) of up to 3 words before index end; 0 if none. */
+    private static double recent(List<Double> sentence, int end) {
+        int n = Math.min(3, end);
+        if (n == 0) return 0;
+        double ctx = 0;
+        for (int i = end - n; i < end; i++) ctx += Math.max(-3, Math.min(3, sentence.get(i)));
+        return ctx / n;
+    }
+
+    /**
+     * A clearly English word right after an ambiguous one means that one was English too ("do" in "do you"),
+     * unless the sentence before it was Greek ("pes mou gia to game": "to" stays as το).
+     * The sentence list ends with the previous word's score.
+     */
+    public static boolean previousWasEnglish(double score, List<Double> sentence) {
+        if (score < STRONG || sentence.isEmpty()) return false;
+        double prev = sentence.get(sentence.size() - 1);
+        return prev > WEAK && prev + recent(sentence, sentence.size() - 1) >= 0;
     }
 
     public static boolean endsSentence(String word) {

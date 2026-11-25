@@ -136,7 +136,7 @@ public sealed class Engine : IDisposable
         if (_conv == null || typedWords.Count < 2 || _settings.LearnedFor(typedWords[^2]) != null) return null;
         string prevLatin = typedWords[^2];
         if (_settings.KeepEnglish && previousOutput != prevLatin
-            && EnglishDetector.PreviousWasEnglish(_english.Score(typedWords[^1]), _english.Score(prevLatin)))
+            && EnglishDetector.PreviousWasEnglish(_english.Score(typedWords[^1]), typedWords.SkipLast(1).Select(_english.Score).ToList()))
             return prevLatin;  // "do" δω -> do once "you" follows
         try
         {
@@ -433,8 +433,8 @@ public sealed class Engine : IDisposable
         // Now that this word is known, re-check the previous one: "ti" τη -> τι before "kaneis",
         // or "do" δω -> do once "you" shows the sentence is English.
         string? fixedPrev = null;
-        if (english && ending == " " && _prevAutoLatin != null && _prevScore is { } ps
-            && EnglishDetector.PreviousWasEnglish(score, ps) && _context.Count > 0 && _context[^1] == _prevAutoLatin
+        if (english && ending == " " && _prevAutoLatin != null && _prevScore != null
+            && EnglishDetector.PreviousWasEnglish(score, _sentence) && _context.Count > 0 && _context[^1] == _prevAutoLatin
             && _prevAutoTyped != _prevAutoLatin + " ")
             fixedPrev = _prevAutoLatin;
         else if (auto && ending == " ")

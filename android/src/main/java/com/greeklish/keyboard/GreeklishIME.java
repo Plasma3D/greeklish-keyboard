@@ -539,7 +539,7 @@ public class GreeklishIME extends InputMethodService
     /** "do" became δω, but "you" shows the sentence is English: put "do" back as typed. */
     private void revertPreviousToEnglish(InputConnection ic, double score, String committed) {
         if (prevAutoLatin == null || prevScore == null || context.isEmpty() || !context.peekLast().equals(prevAutoLatin)
-                || !EnglishDetector.previousWasEnglish(score, prevScore)
+                || !EnglishDetector.previousWasEnglish(score, sentence)
                 || prevAutoCommitted.equals(prevAutoLatin + " ")) return;
         String both = prevAutoCommitted + committed;
         CharSequence before = ic.getTextBeforeCursor(both.length(), 0);

@@ -11,6 +11,8 @@ namespace GreeklishKeyboard;
 public sealed class EnglishDetector
 {
     public const double Strong = 3.0, Weak = -1.5, Need = 2.0;
+    /// <summary>In an English sentence, real English words above this stay English (rotate, file); se, na, kai don't.</summary>
+    public const double Floor = -4.0;
     private readonly Dictionary<string, double> _scores = new();
 
     public EnglishDetector()
@@ -40,14 +42,41 @@ public sealed class EnglishDetector
     public static bool IsEnglish(double score, IReadOnlyList<double> sentence)
     {
         if (score >= Strong) return true;
-        if (score <= Weak) return false;
-        var recent = sentence.TakeLast(3).ToList();
-        double ctx = recent.Count == 0 ? 0 : recent.Average(x => Math.Clamp(x, -3, 3));
-        return score + ctx >= Need;
+        if (score > Weak && score + Recent(sentence, sentence.Count) >= Need) return true;
+        return score > Floor && EnglishSentence(sentence);
     }
 
-    /// <summary>A clearly English word right after an ambiguous one means that one was English too ("do" in "do you").</summary>
-    public static bool PreviousWasEnglish(double score, double previousScore) => score >= Strong && previousScore > Weak;
+    /// <summary>
+    /// The sentence is clearly English so far ("when i do", "send me the"): 2 of the last 3 words are
+    /// clearly English, or the last 2-3 lean English on average. Then it continues in English.
+    /// </summary>
+    public static bool EnglishSentence(IReadOnlyList<double> sentence)
+    {
+        var last = sentence.TakeLast(3).ToList();
+        return last.Count(x => x >= Strong) >= 2 || (last.Count >= 2 && Recent(sentence, sentence.Count) >= Need);
+    }
+
+    /// <summary>Average score (clipped to -3..3) of up to 3 words before index end; 0 if none.</summary>
+    private static double Recent(IReadOnlyList<double> sentence, int end)
+    {
+        int n = Math.Min(3, end);
+        if (n == 0) return 0;
+        double ctx = 0;
+        for (int i = end - n; i < end; i++) ctx += Math.Clamp(sentence[i], -3, 3);
+        return ctx / n;
+    }
+
+    /// <summary>
+    /// A clearly English word right after an ambiguous one means that one was English too ("do" in "do you"),
+    /// unless the sentence before it was Greek ("pes mou gia to game": "to" stays as το).
+    /// The sentence list ends with the previous word's score.
+    /// </summary>
+    public static bool PreviousWasEnglish(double score, IReadOnlyList<double> sentence)
+    {
+        if (score < Strong || sentence.Count == 0) return false;
+        double prev = sentence[^1];
+        return prev > Weak && prev + Recent(sentence, sentence.Count - 1) >= 0;
+    }
 
     public static bool EndsSentence(string word) => word.Length > 0 && ".!?;".Contains(word[^1]);
 }
