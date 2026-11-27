@@ -64,6 +64,14 @@ public final class Layouts {
     }
 
     public static List<List<Key>> letters(boolean numberRow) {
+        return letters(numberRow, false);
+    }
+
+    /** Tonos dead key on the Greek layout: tap it, then a vowel (΄ + α = ά). */
+    public static final String TONOS = "΄", DIALYTIKA = "¨";
+
+    public static List<List<Key>> letters(boolean numberRow, boolean greek) {
+        if (greek) return greekLetters(numberRow);
         List<List<Key>> rows = new ArrayList<>();
         if (numberRow) {
             List<Key> nums = row("1234567890", null);
@@ -75,6 +83,28 @@ public final class Layouts {
         List<Key> r3 = new ArrayList<>();
         r3.add(fn("", SHIFT, 1.5f));
         r3.addAll(hinted("zxcvbnm", new String[]{"*", "\"«»", "'", ":", ";", "!¡", "?¿"}));
+        r3.add(fn("", DELETE, 1.5f));
+        rows.add(r3);
+        rows.add(bottomRow("?123", SYMBOLS));
+        return rows;
+    }
+
+    /** Standard Greek layout (as on Gboard and Greek PC keyboards). Vowels hold their accented forms. */
+    private static List<List<Key>> greekLetters(boolean numberRow) {
+        List<List<Key>> rows = new ArrayList<>();
+        if (numberRow) {
+            List<Key> nums = row("1234567890", null);
+            for (Key k : nums) k.numberRow = true;
+            rows.add(nums);
+        }
+        List<Key> r1 = new ArrayList<>();
+        r1.add(new Key(TONOS, CODE_CHAR, 1f, "1" + DIALYTIKA + "΅;", "1", false));
+        r1.addAll(hinted("ςερτυθιοπ", new String[]{"2", "3έ", "4", "5", "6ύϋΰ", "7", "8ίϊΐ", "9ό", "0"}));
+        rows.add(r1);
+        rows.add(hinted("ασδφγηξκλ", new String[]{"@ά", "#", "$€£", "_", "&", "-ή–", "+", "(", ")"}));
+        List<Key> r3 = new ArrayList<>();
+        r3.add(fn("", SHIFT, 1.5f));
+        r3.addAll(hinted("ζχψωβνμ", new String[]{"*", "\"«»", "'", ":ώ", ";", "!¡", "?;"}));
         r3.add(fn("", DELETE, 1.5f));
         rows.add(r3);
         rows.add(bottomRow("?123", SYMBOLS));

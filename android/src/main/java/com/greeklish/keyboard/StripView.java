@@ -34,7 +34,7 @@ public class StripView extends View {
     private Theme theme;
     private String[] suggestions;  // [left, middle, right] or null for toolbar
     private int activeTool = 0;
-    private boolean greeklishMode = true;
+    private String modeLabel = "ΕΛ";
     private int pressedSlot = -1;
     private boolean middleLearned = false;
     private String searchQuery;               // non-null while searching emoji
@@ -86,8 +86,9 @@ public class StripView extends View {
         invalidate();
     }
 
-    public void setGreeklishMode(boolean on) {
-        greeklishMode = on;
+    /** Short name of the current mode on the toolbar button (ΕΛ / ΑΒΓ / EN). */
+    public void setModeLabel(String label) {
+        modeLabel = label;
         invalidate();
     }
 
@@ -180,7 +181,7 @@ public class StripView extends View {
                     text.setColor(col);
                     text.setTextSize(14 * dp);
                     text.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-                    c.drawText(greeklishMode ? "ΕΛ" : "EN", cx, cy - (text.descent() + text.ascent()) / 2, text);
+                    c.drawText(modeLabel, cx, cy - (text.descent() + text.ascent()) / 2, text);
                     break;
                 default:
                     break;

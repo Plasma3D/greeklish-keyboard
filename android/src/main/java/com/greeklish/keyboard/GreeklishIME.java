@@ -85,6 +85,9 @@ public class GreeklishIME extends InputMethodService
 
     // Field state
     private boolean greeklishMode = true;
+    // Greek letters layout (typed as is, no conversion). Globe key: Greeklish -> Ελληνικά -> English.
+    private boolean greekLetters = false;
+    private String pendingAccent = null;  // tonos / dialytika dead key waiting for a vowel
     private boolean fieldAllowsConversion = true;
     private int enterAction = EditorInfo.IME_ACTION_UNSPECIFIED;
     private boolean enterIsNewline = true;
@@ -98,6 +101,7 @@ public class GreeklishIME extends InputMethodService
         super.onCreate();
         prefs = getSharedPreferences("keyboard", MODE_PRIVATE);
         greeklishMode = prefs.getBoolean("greeklish", true);
+        greekLetters = !greeklishMode && prefs.getBoolean("greek_letters", false);
         learned = new LearnedWords(this);
         worker.execute(() -> {
             try {
@@ -250,7 +254,7 @@ public class GreeklishIME extends InputMethodService
         }
         keys.setEnterIcon(icon);
         keys.setHaptics(prefs.getBoolean("vibrate", true));
-        keys.setLayout(numeric ? Layouts.symbols() : Layouts.letters(KeysView.numberRow(this)));
+        keys.setLayout(numeric ? Layouts.symbols() : lettersLayout());
         keys.setShift(KeysView.SHIFT_OFF);
         updateModeViews();
         showPanel(PANEL_KEYS);
@@ -311,10 +315,66 @@ public class GreeklishIME extends InputMethodService
         if (converting()) {
             word.append(text);
             refreshComposing();
+        } else if (greekLetters) {
+            typeGreek(ic, text);
+            if (pendingAccent != null) return;  // keep Shift for the vowel after ΄ (Ά at sentence start)
         } else {
             ic.commitText(text, 1);
         }
         if (keys.getShift() == KeysView.SHIFT_ONCE) keys.setShift(KeysView.SHIFT_OFF);
+    }
+
+    private static final String PLAIN = "αεηιουωΑΕΗΙΟΥΩ", TONOS_ON = "άέήίόύώΆΈΉΊΌΎΏ";
+
+    /** Greek layout: tonos / dialytika dead keys, and σ at the end of a word becomes ς. */
+    private void typeGreek(InputConnection ic, String text) {
+        if (Layouts.TONOS.equals(text) || Layouts.DIALYTIKA.equals(text) || "΅".equals(text)) {
+            if (text.equals(pendingAccent)) {  // pressed twice: type the mark itself
+                pendingAccent = null;
+                ic.commitText(text, 1);
+            } else {
+                pendingAccent = text;
+            }
+            return;
+        }
+        if (pendingAccent != null) {
+            String accent = pendingAccent;
+            pendingAccent = null;
+            String accented = accent(accent, text);
+            if (accented == null) {
+                ic.commitText(accent, 1);  // no vowel followed: keep the mark as typed
+            } else {
+                text = accented;
+            }
+        }
+        if (text.length() == 1 && !Character.isLetterOrDigit(text.charAt(0))) finalSigma(ic);
+        ic.commitText(text, 1);
+    }
+
+    private static String accent(String accent, String vowel) {
+        if (vowel.length() != 1) return null;
+        char v = vowel.charAt(0);
+        if (Layouts.TONOS.equals(accent)) {
+            int i = PLAIN.indexOf(v);
+            return i < 0 ? null : String.valueOf(TONOS_ON.charAt(i));
+        }
+        boolean both = "΅".equals(accent);  // dialytika + tonos
+        switch (v) {
+            case 'ι': return both ? "ΐ" : "ϊ";
+            case 'υ': return both ? "ΰ" : "ϋ";
+            case 'Ι': return both ? null : "Ϊ";
+            case 'Υ': return both ? null : "Ϋ";
+            default: return null;
+        }
+    }
+
+    /** "καλησ" + space = "καλης ": a σ that ends a word becomes ς. */
+    private void finalSigma(InputConnection ic) {
+        CharSequence before = ic.getTextBeforeCursor(2, 0);
+        if (before == null || before.length() < 2 || before.charAt(1) != 'σ'
+                || !Character.isLetter(before.charAt(0))) return;
+        ic.deleteSurroundingText(1, 0);
+        ic.commitText("ς", 1);
     }
 
     @Override
@@ -374,15 +434,25 @@ public class GreeklishIME extends InputMethodService
                 keys.setLayout(Layouts.symbols2());
                 break;
             case Layouts.LETTERS:
-                keys.setLayout(Layouts.letters(KeysView.numberRow(this)));
+                keys.setLayout(lettersLayout());
                 showPanel(PANEL_KEYS);
                 updateAutoCaps();
                 break;
             case Layouts.MODE:
                 commitWord(false);
-                greeklishMode = !greeklishMode;
-                prefs.edit().putBoolean("greeklish", greeklishMode).apply();
+                // Greeklish -> Ελληνικά -> English -> Greeklish
+                if (greeklishMode) {
+                    greeklishMode = false;
+                    greekLetters = true;
+                } else if (greekLetters) {
+                    greekLetters = false;
+                } else {
+                    greeklishMode = true;
+                }
+                pendingAccent = null;
+                prefs.edit().putBoolean("greeklish", greeklishMode).putBoolean("greek_letters", greekLetters).apply();
                 updateModeViews();
+                if (panel == PANEL_KEYS) keys.setLayout(lettersLayout());
                 break;
             case ACTION_EMOJI:
                 commitWord(false);
@@ -453,6 +523,11 @@ public class GreeklishIME extends InputMethodService
             commitWord(true);
         } else {
             undoLatin = null;
+            if (greekLetters && emojiQuery == null) {
+                if (pendingAccent != null) ic.commitText(pendingAccent, 1);
+                pendingAccent = null;
+                finalSigma(ic);
+            }
             ic.commitText(" ", 1);
             updateAutoCaps();
         }
@@ -793,8 +868,13 @@ public class GreeklishIME extends InputMethodService
     // ------------------------------------------------------------------ helpers
 
     private void updateModeViews() {
-        keys.setGreeklishMode(greeklishMode);
-        strip.setGreeklishMode(greeklishMode);
+        keys.setSpaceLabel(greeklishMode ? "Greeklish" : greekLetters ? "Ελληνικά" : "English");
+        strip.setModeLabel(greeklishMode ? "ΕΛ" : greekLetters ? "ΑΒΓ" : "EN");
+    }
+
+    /** Letter page for the current mode: Greek letters in Ελληνικά mode, Latin otherwise. */
+    private java.util.List<java.util.List<Layouts.Key>> lettersLayout() {
+        return Layouts.letters(KeysView.numberRow(this), greekLetters);
     }
 
     private void updateAutoCaps() {

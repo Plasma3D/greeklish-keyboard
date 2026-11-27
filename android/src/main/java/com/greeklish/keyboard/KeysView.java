@@ -44,7 +44,7 @@ public class KeysView extends View {
     private Theme theme;
     private List<List<Layouts.Key>> rows;
     private int shift = SHIFT_OFF;
-    private boolean greeklishMode = true;
+    private String spaceLabel = "Greeklish";
     private int enterIcon = Icons.ENTER;
     private boolean haptics = true;
 
@@ -113,8 +113,9 @@ public class KeysView extends View {
         return shift;
     }
 
-    public void setGreeklishMode(boolean on) {
-        greeklishMode = on;
+    /** Name of the current mode, written on the space bar (Greeklish / Ελληνικά / English). */
+    public void setSpaceLabel(String label) {
+        spaceLabel = label;
         invalidate();
     }
 
@@ -239,7 +240,7 @@ public class KeysView extends View {
             case Layouts.SPACE:
                 textPaint.setColor(theme.textSecondary);
                 textPaint.setTextSize(14 * dp);
-                canvas.drawText(greeklishMode ? "Greeklish" : "English", cx, cy + 4.5f * dp, textPaint);
+                canvas.drawText(spaceLabel, cx, cy + 4.5f * dp, textPaint);
                 return;
             default:
                 break;

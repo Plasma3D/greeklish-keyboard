@@ -10,10 +10,10 @@ Type Greeklish, get Greek. A keyboard for **Android** and a tray app for **Windo
 
 Get the latest version from the [Releases page](https://github.com/Plasma3D/greeklish-keyboard/releases/latest):
 
-- **Android**: `GreeklishKeyboard-0.4.3.apk`. Install it, open the app and follow the steps to enable the keyboard.
+- **Android**: `GreeklishKeyboard-0.4.4.apk`. Install it, open the app and follow the steps to enable the keyboard.
 - **Windows**: `GreeklishKeyboard-Windows-0.2.3.exe`. Just run it; it sits in the tray (ΕΛ / EN) and works in every program.
 
-Features: converts each word when you press Space, keeps English words in English, autocorrects typos, learns your words, Gboard-style layout with long-press symbols, number row, themes, emoji search and clipboard.
+Features: converts each word when you press Space, a real Greek layout too (globe key: Greeklish → Ελληνικά → English), keeps English words in English, autocorrects typos, learns your words, Gboard-style layout with long-press symbols, number row, themes, emoji search and clipboard.
 
 ## How it works
 
